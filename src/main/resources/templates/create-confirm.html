@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登録内容の確認</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <main class="container">
+        <h1 class="page-title">☑ この内容で登録します</h1>
+
+        <p class="confirm-value"><strong>やること</strong>　<span th:text="${todo.title ?: '（入力なし）'}">（入力なし）</span></p>
+        <p class="confirm-value"><strong>メモ</strong>　<span th:text="${todo.detail ?: '（入力なし）'}">（入力なし）</span></p>
+        <p class="confirm-value"><strong>ジャンル</strong>　<span th:text="${todo.category ?: '（入力なし）'}">（入力なし）</span></p>
+        <p class="confirm-value"><strong>優先度</strong>　<span th:text="${todo.priority == 1 ? '高' : (todo.priority == 2 ? '中' : (todo.priority == 3 ? '低' : '（入力なし）'))}">（入力なし）</span></p>
+        <p class="confirm-value"><strong>期限</strong>　<span th:text="${todo.dueDate ?: '（入力なし）'}">（入力なし）</span></p>
+
+        <form action="/todos" method="post" th:object="${todo}">
+            <input type="hidden" th:field="*{title}">
+            <input type="hidden" th:field="*{detail}">
+            <input type="hidden" th:field="*{category}">
+            <input type="hidden" th:field="*{priority}">
+            <input type="hidden" th:field="*{dueDate}">
+
+            <div class="confirm-actions">
+                <button class="btn" type="submit">登録する</button>
+                <button class="btn sub" type="submit" formaction="/todos/new">書き直す</button>
+            </div>
+        </form>
+    </main>
+</body>
+</html>
