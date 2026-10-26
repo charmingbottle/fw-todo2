@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todoapp.TodoMapper">
+
+    <select id="search" resultType="com.example.todoapp.Todo">
+        SELECT
+            id,
+            title,
+            category,
+            priority,
+            due_date,
+            completed,
+            created_at,
+            updated_at
+        FROM todos
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="category != null and category != '' and category != 'すべて'">
+                AND category = #{category}
+            </if>
+        </where>
+        ORDER BY due_date
+        <choose>
+            <when test="order == 'desc'">DESC</when>
+            <otherwise>ASC</otherwise>
+        </choose>
+    </select>
+
+    <select id="searchByDueDate" resultType="com.example.todoapp.Todo">
+        SELECT
+            id,
+            title,
+            category,
+            priority,
+            due_date,
+            completed,
+            created_at,
+            updated_at
+        FROM todos
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="category != null and category != '' and category != '縺吶∋縺ｦ'">
+                AND category = #{category}
+            </if>
+            <if test="from != null">
+                AND due_date &gt;= #{from}
+            </if>
+            <if test="to != null">
+                AND due_date &lt;= #{to}
+            </if>
+        </where>
+        ORDER BY due_date
+        <choose>
+            <when test="order == 'desc'">DESC</when>
+            <otherwise>ASC</otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO todos (title, detail, category, priority, due_date, completed)
+        VALUES (#{title}, #{detail}, #{category}, #{priority}, #{dueDate}, COALESCE(#{completed}, FALSE))
+    </insert>
+
+    <select id="findById" resultType="com.example.todoapp.Todo">
+        SELECT
+            id,
+            title,
+            detail,
+            category,
+            priority,
+            due_date,
+            completed,
+            created_at,
+            updated_at
+        FROM todos
+        WHERE id = #{id}
+    </select>
+
+    <update id="update">
+        UPDATE todos
+        SET
+            title = #{title},
+            detail = #{detail},
+            category = #{category},
+            priority = #{priority},
+            due_date = #{dueDate},
+            completed = #{completed}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM todos
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -11,7 +11,9 @@
             category,
             priority,
             due_date,
-            completed
+            completed,
+            created_at,
+            updated_at
         FROM todos
         <where>
             <if test="keyword != null and keyword != ''">
@@ -28,9 +30,41 @@
         </choose>
     </select>
 
-    <insert id="insert">
-        INSERT INTO todos (title, detail, category, priority, due_date)
-        VALUES (#{title}, #{detail}, #{category}, #{priority}, #{dueDate})
+    <select id="searchByDueDate" resultType="com.example.todoapp.Todo">
+        SELECT
+            id,
+            title,
+            category,
+            priority,
+            due_date,
+            completed,
+            created_at,
+            updated_at
+        FROM todos
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="category != null and category != '' and category != '縺吶∋縺ｦ'">
+                AND category = #{category}
+            </if>
+            <if test="from != null">
+                AND due_date &gt;= #{from}
+            </if>
+            <if test="to != null">
+                AND due_date &lt;= #{to}
+            </if>
+        </where>
+        ORDER BY due_date
+        <choose>
+            <when test="order == 'desc'">DESC</when>
+            <otherwise>ASC</otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO todos (title, detail, category, priority, due_date, completed)
+        VALUES (#{title}, #{detail}, #{category}, #{priority}, #{dueDate}, COALESCE(#{completed}, FALSE))
     </insert>
 
     <select id="findById" resultType="com.example.todoapp.Todo">
@@ -41,7 +75,9 @@
             category,
             priority,
             due_date,
-            completed
+            completed,
+            created_at,
+            updated_at
         FROM todos
         WHERE id = #{id}
     </select>
