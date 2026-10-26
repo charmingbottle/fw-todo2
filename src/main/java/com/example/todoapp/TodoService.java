@@ -1,6 +1,7 @@
 package com.example.todoapp;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,11 @@ public class TodoService {
 
     public List<Todo> search(String keyword, String category, String order) {
         return todoMapper.search(keyword, category, order);
+    }
+
+    public List<Todo> searchByDueDate(String keyword, String category, String order,
+            LocalDate from, LocalDate to) {
+        return todoMapper.searchByDueDate(keyword, category, order, from, to);
     }
 
     public Todo findById(Long id) {

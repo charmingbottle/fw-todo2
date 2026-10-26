@@ -117,3 +117,16 @@ body {
     color: #334155;
     text-decoration: underline;
 }
+
+.calendar-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendar-toolbar-left,
+.calendar-toolbar-right {
+    display: flex;
+    gap: 12px;
+}

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カレンダー</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .calendar-page { max-width: 1140px; }
+        .calendar-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 20px; color: #1e293b; font-size: 22px; }
+        .calendar-icon {
+            position: relative;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4338ca;
+            border-radius: 2px;
+            flex: 0 0 20px;
+        }
+
+        .calendar-icon::before {
+            position: absolute;
+            top: -5px;
+            left: 3px;
+            width: 2px;
+            height: 6px;
+            background: #4338ca;
+            box-shadow: 8px 0 #4338ca;
+            content: "";
+        }
+
+        .calendar-icon::after {
+            position: absolute;
+            top: 5px;
+            right: 0;
+            left: 0;
+            border-top: 2px solid #4338ca;
+            content: "";
+        }
+        .calendar-table { width: 100%; border: 1px solid #94a3b8; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; table-layout: fixed; }
+        .calendar-table th, .calendar-table td { border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; vertical-align: top; text-align: left; }
+        .calendar-table th { height: 42px; padding: 8px; background: #f1f5f9; color: #0f172a; }
+        .calendar-table td { height: 110px; padding: 7px; background: #ffffff; }
+        .calendar-table td.saturday { background: #eff6ff; }
+        .calendar-table td.sunday { background: #fff1f2; }
+        .calendar-table td.holiday { background: #fef3c7; }
+        .calendar-table tr > :last-child { border-right: 0; }
+        .calendar-table tbody tr:last-child td { border-bottom: 0; }
+        .calendar-date { display: block; margin-bottom: 3px; color: #1e293b; font-weight: bold; }
+        .todo-name { margin: 4px 0 0; color: #334155; font-size: 14px; overflow-wrap: anywhere; }
+        .todo-link { display: block; color: inherit; text-decoration: none; }
+        .todo-name.overdue { color: #dc2626; }
+        .holiday-warning { margin: 0 0 12px; color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <main class="container calendar-page">
+        <h1 class="calendar-heading">
+            <span class="calendar-icon" aria-hidden="true"></span>
+            <span id="calendar-title">2026年4月</span>
+        </h1>
+
+        <div class="calendar-toolbar">
+            <div class="calendar-toolbar-left">
+                <a id="previous-month" class="link" href="/calendar?year=2026&month=3">前の月</a>
+                <a id="next-month" class="link" href="/calendar?year=2026&month=5">次の月</a>
+            </div>
+            <div class="calendar-toolbar-right">
+                <a class="link" href="/todos">表で見る</a>
+                <a class="link" href="/todos/new">新規登録</a>
+            </div>
+        </div>
+
+        <p id="holiday-warning" class="holiday-warning" hidden>祝日を取れませんでした</p>
+
+        <table class="calendar-table" data-from="2026-04-01" data-to="2026-04-30">
+            <thead>
+                <tr>
+                    <th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
+                </tr>
+            </thead>
+            <tbody id="calendar-body"></tbody>
+        </table>
+    </main>
+
+    <script>
+        async function loadCalendar() {
+            const params = new URLSearchParams(window.location.search);
+            const year = Number(params.get('year') || 2026);
+            const month = Number(params.get('month') || 4);
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+            const from = `${year}-${String(month).padStart(2, '0')}-01`;
+            const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            const calendar = document.querySelector('.calendar-table');
+            const body = document.querySelector('#calendar-body');
+
+            document.querySelector('#calendar-title').textContent = `${year}年${month}月`;
+            calendar.dataset.from = from;
+            calendar.dataset.to = to;
+
+            const previousMonth = new Date(year, month - 2, 1);
+            const nextMonth = new Date(year, month, 1);
+            document.querySelector('#previous-month').href = `/calendar?year=${previousMonth.getFullYear()}&month=${previousMonth.getMonth() + 1}`;
+            document.querySelector('#next-month').href = `/calendar?year=${nextMonth.getFullYear()}&month=${nextMonth.getMonth() + 1}`;
+
+            const firstWeekday = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            let row;
+
+            for (let cellIndex = 0; cellIndex < firstWeekday; cellIndex += 1) {
+                if (cellIndex % 7 === 0) {
+                    row = document.createElement('tr');
+                    body.appendChild(row);
+                }
+                row.appendChild(document.createElement('td'));
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const cellIndex = firstWeekday + day - 1;
+                if (cellIndex % 7 === 0) {
+                    row = document.createElement('tr');
+                    body.appendChild(row);
+                }
+
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const cell = document.createElement('td');
+                cell.dataset.date = date;
+
+                const dateLabel = document.createElement('span');
+                dateLabel.className = 'calendar-date';
+                dateLabel.textContent = day;
+                cell.appendChild(dateLabel);
+                row.appendChild(cell);
+            }
+
+            while (row.children.length < 7) {
+                row.appendChild(document.createElement('td'));
+            }
+
+            const res = await fetch(`/api/todos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+            const todos = await res.json();
+            const holidayRes = await fetch(`/api/holidays?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+            const holidays = await holidayRes.json();
+
+            if (holidayRes.headers.has('X-Holidays-Unavailable')) {
+                document.querySelector('#holiday-warning').hidden = false;
+            }
+
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            document.querySelectorAll('td[data-date]').forEach(cell => {
+                const date = cell.dataset.date;
+                const weekday = new Date(`${date}T00:00:00`).getDay();
+                if (weekday === 6) {
+                    cell.classList.add('saturday');
+                } else if (weekday === 0) {
+                    cell.classList.add('sunday');
+                }
+                if (Object.prototype.hasOwnProperty.call(holidays, date)) {
+                    cell.classList.add('holiday');
+                    cell.title = holidays[date];
+                }
+
+                const dateTodos = todos.filter(todo => todo.dueDate === date);
+                dateTodos.slice(0, 3).forEach(todo => {
+                    const name = document.createElement('a');
+                    name.className = 'todo-name todo-link';
+                    name.href = `/todos/${todo.id}/edit`;
+                    if (todo.dueDate < todayString && !todo.completed) {
+                        name.classList.add('overdue');
+                    }
+                    name.textContent = todo.title;
+                    cell.appendChild(name);
+                });
+
+                const remainingCount = dateTodos.length - 3;
+                if (remainingCount > 0) {
+                    const remaining = document.createElement('p');
+                    remaining.className = 'todo-name';
+                    remaining.textContent = `ほか ${remainingCount}件`;
+                    cell.appendChild(remaining);
+                }
+            });
+        }
+
+        loadCalendar();
+    </script>
+</body>
+</html>
