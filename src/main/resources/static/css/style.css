@@ -4,8 +4,8 @@
 
 body {
     margin: 0;
-    color: #334155;
-    background: #ffffff;
+    color: #e2e8f0;
+    background: linear-gradient(135deg, #0b1220 0%, #111827 55%, #0f1f2e 100%);
     font-family: sans-serif;
     font-size: 16px;
     line-height: 1.6;
@@ -14,14 +14,30 @@ body {
 .container {
     width: 100%;
     max-width: 900px;
-    margin: 0 auto;
-    padding: 24px 16px;
+    min-height: calc(100vh - 64px);
+    margin: 32px auto;
+    padding: 36px 40px;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid #475569;
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(30, 41, 59, 0.08);
 }
 
 .page-title {
     margin: 0 0 24px;
-    color: #1e293b;
-    font-size: 28px;
+    color: #f8fafc;
+    font-size: 32px;
+    letter-spacing: 0.04em;
+}
+
+.page-title::after {
+    display: block;
+    width: 48px;
+    height: 4px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background: #60a5fa;
+    content: "";
 }
 
 .todo-table {
@@ -31,23 +47,64 @@ body {
 
 .todo-table th,
 .todo-table td {
-    border: 1px solid #94a3b8;
-    padding: 6px 10px;
+    border: 1px solid #64748b;
+    padding: 10px 12px;
     text-align: left;
     font-size: 14px;
 }
 
 .todo-table th {
-    background: #f1f5f9;
+    background: #1e3a5f;
+    color: #dbeafe;
     font-weight: bold;
+}
+
+.todo-table tbody tr:nth-child(even) {
+    background: #172033;
+}
+
+.todo-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.todo-table tbody tr:hover {
+    background: #223047;
+}
+
+.todo-table tbody tr.overdue {
+    background: #3b1f2b;
+}
+
+.todo-table tbody tr.completed {
+    color: #94a3b8;
+}
+
+.todo-table tbody tr.completed td:first-child {
+    text-decoration: line-through;
+}
+
+.todo-table td.overdue {
+    color: #fca5a5;
+    font-weight: bold;
+}
+
+.todo-table td.due-soon {
+    color: #fcd34d;
+    font-weight: bold;
+}
+
+.priority-mark {
+    margin-left: 6px;
+    color: #fcd34d;
+    font-size: 1.1em;
 }
 
 .flash {
     margin: 0 0 16px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #64748b;
     border-radius: 8px;
     padding: 8px 12px;
-    background: #f1f5f9;
+    background: #1e293b;
 }
 
 .search-bar {
@@ -55,7 +112,11 @@ body {
     flex-wrap: wrap;
     align-items: end;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 96px;
+    padding: 18px;
+    border: 1px solid #475569;
+    border-radius: 14px;
+    background: #1e293b;
 }
 
 .form-row {
@@ -69,12 +130,19 @@ body {
 
 .form-input {
     width: 100%;
-    border: 1px solid #94a3b8;
+    border: 1px solid #64748b;
     border-radius: 6px;
     padding: 7px 10px;
-    background: #ffffff;
-    color: #334155;
+    background: #0f172a;
+    color: #f8fafc;
     font: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
 .search-bar .form-input {
@@ -83,7 +151,7 @@ body {
 
 .error {
     margin: 4px 0 0;
-    color: #B91C1C;
+    color: #fca5a5;
     font-weight: bold;
 }
 
@@ -98,24 +166,85 @@ body {
 
 .btn {
     display: inline-block;
-    border: 1px solid #334155;
+    border: 1px solid #60a5fa;
     border-radius: 7px;
     padding: 7px 18px;
-    background: #334155;
+    background: #2563eb;
     color: #ffffff;
     font: inherit;
     text-decoration: none;
     cursor: pointer;
+    box-shadow: 0 4px 10px rgba(30, 41, 59, 0.12);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 16px rgba(30, 41, 59, 0.18);
 }
 
 .btn.sub {
-    background: #ffffff;
-    color: #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.todo-actions {
+    display: flex;
+    gap: 12px;
+    margin: 0 0 24px;
+}
+
+.btn-primary {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn-outline {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.btn-outline:hover {
+    background: #334155;
 }
 
 .link {
-    color: #334155;
+    color: #93c5fd;
     text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.link:hover {
+    color: #bfdbfe;
+}
+
+.pin-toggle {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fcd34d;
+    font: inherit;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .container {
+        margin: 0;
+        padding: 24px 16px;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .page-title {
+        font-size: 28px;
+    }
+
+    .todo-actions .btn {
+        flex: 1;
+        padding-right: 10px;
+        padding-left: 10px;
+        text-align: center;
+    }
 }
 
 .calendar-toolbar {

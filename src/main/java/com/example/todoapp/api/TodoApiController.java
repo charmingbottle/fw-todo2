@@ -3,6 +3,8 @@ package com.example.todoapp.api;
 import java.util.List;
 import java.time.LocalDate;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -10,6 +12,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,48 @@ public class TodoApiController {
 
     public TodoApiController(TodoService todoService) {
         this.todoService = todoService;
+    }
+
+    @GetMapping(value = "/api/todos.csv", produces = "text/csv")
+    public ResponseEntity<byte[]> todosCsv(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "") String category,
+            @RequestParam(defaultValue = "asc") String order,
+            @RequestParam(defaultValue = "false") boolean showCompleted) {
+        var todos = todoService.exportTodos(keyword, category, order, showCompleted);
+        StringBuilder csv = new StringBuilder("\uFEFF");
+        csv.append(csvCell("やること")).append(',')
+                .append(csvCell("ジャンル")).append(',')
+                .append(csvCell("優先度")).append(',')
+                .append(csvCell("期限")).append(',')
+                .append(csvCell("状態")).append("\r\n");
+        for (Todo todo : todos) {
+            String status = Boolean.TRUE.equals(todo.getCompleted()) ? "完了" : "未完了";
+            if (todo.getCompletedAt() != null) {
+                status += "（" + todo.getCompletedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "）";
+            }
+            csv.append(csvCell(todo.getTitle())).append(',')
+                    .append(csvCell(todo.getCategory())).append(',')
+                    .append(csvCell(priorityLabel(todo.getPriority()))).append(',')
+                    .append(csvCell(todo.getDueDate())).append(',')
+                    .append(csvCell(status)).append("\r\n");
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"todos.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String priorityLabel(Integer priority) {
+        return priority == 1 ? "高" : (priority == 2 ? "中" : "低");
+    }
+
+    private String csvCell(Object value) {
+        String text = value == null ? "" : value.toString();
+        if (text.startsWith("=") || text.startsWith("+") || text.startsWith("-") || text.startsWith("@")) {
+            text = "'" + text;
+        }
+        return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 
     @GetMapping("/api/todos")
