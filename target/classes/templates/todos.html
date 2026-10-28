@@ -12,6 +12,11 @@
 
         <h1 class="page-title">やること一覧</h1>
 
+        <p class="todo-actions">
+            <a class="link" href="/todos/new">新規登録</a>
+            <a class="link" href="/calendar">カレンダーで見る</a>
+        </p>
+
         <form class="search-bar" action="/todos" method="get">
             <label class="form-label" for="keyword">やること</label>
             <input class="form-input" id="keyword" name="keyword" type="text" th:value="${keyword}">
@@ -27,15 +32,18 @@
             </select>
 
             <input type="hidden" name="order" th:value="${order}">
+            <label class="form-label">
+                <input type="checkbox" name="showCompleted" value="true" th:checked="${showCompleted}">
+                完了したものも表示する
+            </label>
             <button class="btn" type="submit">絞り込む</button>
         </form>
 
         <p>
-            <a class="link" th:href="@{/todos(keyword=${keyword}, category=${category}, order='asc')}">期限が近い順</a>
-            <a class="link" th:href="@{/todos(keyword=${keyword}, category=${category}, order='desc')}">期限が遠い順</a>
+            <a class="link" th:href="@{/todos(keyword=${keyword}, category=${category}, order='asc', showCompleted=${showCompleted}, page=1)}">期限が近い順</a>
+            <a class="link" th:href="@{/todos(keyword=${keyword}, category=${category}, order='desc', showCompleted=${showCompleted}, page=1)}">期限が遠い順</a>
+            <a class="link" th:href="@{/api/todos.csv(keyword=${keyword}, category=${category}, order=${order}, showCompleted=${showCompleted})}">CSVで書き出す</a>
         </p>
-
-        <p><a class="link" href="/todos/new">新規登録</a> <a class="link" href="/calendar">カレンダーで見る</a></p>
 
         <p th:if="${#lists.isEmpty(todos)}">まだ1件も登録されていません</p>
 
@@ -51,19 +59,41 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="todo : ${todos}">
+                <tr th:each="todo : ${todos}" th:classappend="${todo.completed == true ? ' completed' : (todo.dueDate != null and todo.dueDate.isBefore(T(java.time.LocalDate).now()) ? ' overdue' : '')}">
                     <td th:text="${todo.title}">やること</td>
                     <td th:text="${todo.category}">ジャンル</td>
-                    <td th:text="${todo.priority == 1 ? '高' : (todo.priority == 2 ? '中' : '低')}">中</td>
-                    <td th:text="${todo.dueDate}">2026-04-11</td>
+                    <td>
+                        <span th:text="${todo.priority == 1 ? '高' : (todo.priority == 2 ? '中' : '低')}">中</span>
+                        <span class="priority-mark" th:if="${todo.priority == 1}" aria-label="最優先">★</span>
+                    </td>
+                    <td th:classappend="${todo.dueDate != null and todo.dueDate.isBefore(T(java.time.LocalDate).now()) ? ' overdue' : (todo.dueDate != null and !todo.dueDate.isAfter(T(java.time.LocalDate).now().plusDays(3)) ? ' due-soon' : '')}" th:text="${todo.dueDate}">2026-04-11</td>
                     <td th:text="${todo.completed ? '完了' : '未完了'}">未完了</td>
                     <td>
+                        <form method="post" th:action="@{/todos/{id}/pin(id=${todo.id})}">
+                            <input type="hidden" name="keyword" th:value="${keyword}">
+                            <input type="hidden" name="category" th:value="${category}">
+                            <input type="hidden" name="order" th:value="${order}">
+                            <input type="hidden" name="showCompleted" th:value="${showCompleted}">
+                            <input type="hidden" name="page" th:value="${page}">
+                            <button class="pin-toggle" type="submit"
+                                    th:text="${todo.pinned == true ? '★' : '☆'}"
+                                    th:aria-label="${todo.pinned == true ? '印を外す' : '印を付ける'}">☆</button>
+                        </form>
                         <a class="link" th:href="@{/todos/{id}/edit(id=${todo.id})}">編集</a>
                         <a class="link" th:href="@{/todos/{id}/delete(id=${todo.id})}">削除</a>
                     </td>
                 </tr>
             </tbody>
         </table>
+
+        <p th:if="${totalPages > 1}">
+            <span th:each="pageNumber : ${#numbers.sequence(1, totalPages)}">
+                <a class="link" th:if="${pageNumber != page}"
+                   th:href="@{/todos(keyword=${keyword}, category=${category}, order=${order}, showCompleted=${showCompleted}, page=${pageNumber})}"
+                   th:text="${pageNumber}">1</a>
+                <span th:if="${pageNumber == page}" th:text="${pageNumber}">1</span>
+            </span>
+        </p>
     </main>
 </body>
 </html>

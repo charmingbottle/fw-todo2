@@ -12,6 +12,8 @@
             priority,
             due_date,
             completed,
+            completed_at,
+            pinned,
             created_at,
             updated_at
         FROM todos
@@ -22,8 +24,57 @@
             <if test="category != null and category != '' and category != 'すべて'">
                 AND category = #{category}
             </if>
+            <if test="showCompleted == false">
+                AND completed = FALSE
+            </if>
         </where>
-        ORDER BY due_date
+        ORDER BY pinned DESC, due_date
+        <choose>
+            <when test="order == 'desc'">DESC</when>
+            <otherwise>ASC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM todos
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="category != null and category != '' and category != 'すべて'">
+                AND category = #{category}
+            </if>
+            <if test="showCompleted == false">
+                AND completed = FALSE
+            </if>
+        </where>
+    </select>
+
+    <select id="exportTodos" resultType="com.example.todoapp.Todo">
+        SELECT
+            id,
+            title,
+            category,
+            priority,
+            due_date,
+            completed,
+            completed_at,
+            pinned
+        FROM todos
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="category != null and category != '' and category != 'すべて'">
+                AND category = #{category}
+            </if>
+            <if test="showCompleted == false">
+                AND completed = FALSE
+            </if>
+        </where>
+        ORDER BY pinned DESC, due_date
         <choose>
             <when test="order == 'desc'">DESC</when>
             <otherwise>ASC</otherwise>
@@ -38,6 +89,8 @@
             priority,
             due_date,
             completed,
+            completed_at,
+            pinned,
             created_at,
             updated_at
         FROM todos
@@ -63,8 +116,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO todos (title, detail, category, priority, due_date, completed)
-        VALUES (#{title}, #{detail}, #{category}, #{priority}, #{dueDate}, COALESCE(#{completed}, FALSE))
+        INSERT INTO todos (title, detail, category, priority, due_date, completed, completed_at, pinned)
+        VALUES (#{title}, #{detail}, #{category}, #{priority}, #{dueDate}, COALESCE(#{completed}, FALSE), NULL, COALESCE(#{pinned}, FALSE))
     </insert>
 
     <select id="findById" resultType="com.example.todoapp.Todo">
@@ -76,6 +129,8 @@
             priority,
             due_date,
             completed,
+            completed_at,
+            pinned,
             created_at,
             updated_at
         FROM todos
@@ -90,7 +145,14 @@
             category = #{category},
             priority = #{priority},
             due_date = #{dueDate},
-            completed = #{completed}
+            completed = #{completed},
+            completed_at = #{completedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePinned">
+        UPDATE todos
+        SET pinned = #{pinned}
         WHERE id = #{id}
     </update>
 

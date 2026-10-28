@@ -15,6 +15,8 @@ import jakarta.validation.Valid;
 @Controller
 public class HomeController {
 
+    private static final int PAGE_SIZE = 10;
+
     private final TodoService todoService;
 
     public HomeController(TodoService todoService) {
@@ -32,11 +34,20 @@ public class HomeController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "") String category,
             @RequestParam(defaultValue = "asc") String order,
+            @RequestParam(defaultValue = "false") boolean showCompleted,
+            @RequestParam(defaultValue = "1") int page,
             Model model) {
-        model.addAttribute("todos", todoService.search(keyword, category, order));
+        int totalCount = todoService.count(keyword, category, showCompleted);
+        int totalPages = Math.max(1, (totalCount + PAGE_SIZE - 1) / PAGE_SIZE);
+        page = Math.max(1, Math.min(page, totalPages));
+        int offset = (page - 1) * PAGE_SIZE;
+        model.addAttribute("todos", todoService.search(keyword, category, order, showCompleted, PAGE_SIZE, offset));
         model.addAttribute("keyword", keyword);
         model.addAttribute("category", category);
         model.addAttribute("order", order);
+        model.addAttribute("showCompleted", showCompleted);
+        model.addAttribute("page", page);
+        model.addAttribute("totalPages", totalPages);
         return "todos";
     }
 
@@ -102,6 +113,27 @@ public class HomeController {
         todo.setId(id);
         todoService.update(todo);
         redirectAttributes.addFlashAttribute("message", "保存しました");
+        return "redirect:/todos";
+    }
+
+    @PostMapping("/todos/{id}/pin")
+    public String togglePin(
+            @PathVariable("id") Long id,
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "") String category,
+            @RequestParam(defaultValue = "asc") String order,
+            @RequestParam(defaultValue = "false") boolean showCompleted,
+            @RequestParam(defaultValue = "1") int page,
+            RedirectAttributes redirectAttributes) {
+        Todo todo = todoService.findById(id);
+        if (todo != null) {
+            todoService.togglePinned(id, !Boolean.TRUE.equals(todo.getPinned()));
+        }
+        redirectAttributes.addAttribute("keyword", keyword);
+        redirectAttributes.addAttribute("category", category);
+        redirectAttributes.addAttribute("order", order);
+        redirectAttributes.addAttribute("showCompleted", showCompleted);
+        redirectAttributes.addAttribute("page", page);
         return "redirect:/todos";
     }
 

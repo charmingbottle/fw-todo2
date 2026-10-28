@@ -62,10 +62,12 @@
 
         <div class="calendar-toolbar">
             <div class="calendar-toolbar-left">
-                <a id="previous-month" class="link" href="/calendar?year=2026&month=3">前の月</a>
-                <a id="next-month" class="link" href="/calendar?year=2026&month=5">次の月</a>
+                <a id="previous-period" class="link" href="/calendar?year=2026&month=3">前の月</a>
+                <a id="next-period" class="link" href="/calendar?year=2026&month=5">次の月</a>
             </div>
             <div class="calendar-toolbar-right">
+                <a id="month-view" class="link" href="/calendar?year=2026&month=4">月表示</a>
+                <a id="week-view" class="link" href="/calendar?view=week&date=2026-04-01">週表示</a>
                 <a class="link" href="/todos">表で見る</a>
                 <a class="link" href="/todos/new">新規登録</a>
             </div>
@@ -88,54 +90,91 @@
             const params = new URLSearchParams(window.location.search);
             const year = Number(params.get('year') || 2026);
             const month = Number(params.get('month') || 4);
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            const from = `${year}-${String(month).padStart(2, '0')}-01`;
-            const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            const view = params.get('view') || 'month';
+            const dateParam = params.get('date');
+            const anchorDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date(year, month - 1, 1);
+            const firstDay = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1);
+            const lastDay = new Date(anchorDate.getFullYear(), anchorDate.getMonth() + 1, 0);
+            const fromDate = view === 'week'
+                ? new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() - anchorDate.getDay())
+                : firstDay;
+            const toDate = view === 'week'
+                ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + 6)
+                : lastDay;
+            const formatDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const from = formatDate(fromDate);
+            const to = formatDate(toDate);
             const calendar = document.querySelector('.calendar-table');
             const body = document.querySelector('#calendar-body');
 
-            document.querySelector('#calendar-title').textContent = `${year}年${month}月`;
+            document.querySelector('#calendar-title').textContent = view === 'week'
+                ? `${fromDate.getFullYear()}年${fromDate.getMonth() + 1}月${fromDate.getDate()}日〜${toDate.getMonth() + 1}月${toDate.getDate()}日`
+                : `${firstDay.getFullYear()}年${firstDay.getMonth() + 1}月`;
             calendar.dataset.from = from;
             calendar.dataset.to = to;
 
-            const previousMonth = new Date(year, month - 2, 1);
-            const nextMonth = new Date(year, month, 1);
-            document.querySelector('#previous-month').href = `/calendar?year=${previousMonth.getFullYear()}&month=${previousMonth.getMonth() + 1}`;
-            document.querySelector('#next-month').href = `/calendar?year=${nextMonth.getFullYear()}&month=${nextMonth.getMonth() + 1}`;
+            const previousPeriod = view === 'week'
+                ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() - 7)
+                : new Date(firstDay.getFullYear(), firstDay.getMonth() - 1, 1);
+            const nextPeriod = view === 'week'
+                ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + 7)
+                : new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 1);
+            const previousLink = document.querySelector('#previous-period');
+            const nextLink = document.querySelector('#next-period');
+            previousLink.textContent = view === 'week' ? '前の週' : '前の月';
+            nextLink.textContent = view === 'week' ? '次の週' : '次の月';
+            previousLink.href = view === 'week'
+                ? `/calendar?view=week&date=${formatDate(previousPeriod)}`
+                : `/calendar?year=${previousPeriod.getFullYear()}&month=${previousPeriod.getMonth() + 1}`;
+            nextLink.href = view === 'week'
+                ? `/calendar?view=week&date=${formatDate(nextPeriod)}`
+                : `/calendar?year=${nextPeriod.getFullYear()}&month=${nextPeriod.getMonth() + 1}`;
+            document.querySelector('#month-view').href = `/calendar?year=${firstDay.getFullYear()}&month=${firstDay.getMonth() + 1}`;
+            document.querySelector('#week-view').href = `/calendar?view=week&date=${formatDate(fromDate)}`;
 
-            const firstWeekday = firstDay.getDay();
-            const daysInMonth = lastDay.getDate();
+            body.replaceChildren();
             let row;
 
-            for (let cellIndex = 0; cellIndex < firstWeekday; cellIndex += 1) {
-                if (cellIndex % 7 === 0) {
-                    row = document.createElement('tr');
-                    body.appendChild(row);
-                }
-                row.appendChild(document.createElement('td'));
-            }
-
-            for (let day = 1; day <= daysInMonth; day += 1) {
-                const cellIndex = firstWeekday + day - 1;
-                if (cellIndex % 7 === 0) {
-                    row = document.createElement('tr');
-                    body.appendChild(row);
-                }
-
-                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const appendDateCell = date => {
                 const cell = document.createElement('td');
-                cell.dataset.date = date;
-
+                const dateString = formatDate(date);
+                cell.dataset.date = dateString;
                 const dateLabel = document.createElement('span');
                 dateLabel.className = 'calendar-date';
-                dateLabel.textContent = day;
+                dateLabel.textContent = date.getDate();
                 cell.appendChild(dateLabel);
                 row.appendChild(cell);
-            }
+            };
 
-            while (row.children.length < 7) {
-                row.appendChild(document.createElement('td'));
+            if (view === 'week') {
+                row = document.createElement('tr');
+                body.appendChild(row);
+                for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+                    appendDateCell(new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate() + dayIndex));
+                }
+            } else {
+                const firstWeekday = firstDay.getDay();
+                const daysInMonth = lastDay.getDate();
+                for (let cellIndex = 0; cellIndex < firstWeekday; cellIndex += 1) {
+                    if (cellIndex % 7 === 0) {
+                        row = document.createElement('tr');
+                        body.appendChild(row);
+                    }
+                    row.appendChild(document.createElement('td'));
+                }
+
+                for (let day = 1; day <= daysInMonth; day += 1) {
+                    const cellIndex = firstWeekday + day - 1;
+                    if (cellIndex % 7 === 0) {
+                        row = document.createElement('tr');
+                        body.appendChild(row);
+                    }
+                    appendDateCell(new Date(firstDay.getFullYear(), firstDay.getMonth(), day));
+                }
+
+                while (row.children.length < 7) {
+                    row.appendChild(document.createElement('td'));
+                }
             }
 
             const res = await fetch(`/api/todos?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
@@ -164,7 +203,8 @@
                 }
 
                 const dateTodos = todos.filter(todo => todo.dueDate === date);
-                dateTodos.slice(0, 3).forEach(todo => {
+                const visibleTodos = view === 'week' ? dateTodos : dateTodos.slice(0, 3);
+                visibleTodos.forEach(todo => {
                     const name = document.createElement('a');
                     name.className = 'todo-name todo-link';
                     name.href = `/todos/${todo.id}/edit`;
@@ -175,7 +215,7 @@
                     cell.appendChild(name);
                 });
 
-                const remainingCount = dateTodos.length - 3;
+                const remainingCount = view === 'week' ? 0 : dateTodos.length - 3;
                 if (remainingCount > 0) {
                     const remaining = document.createElement('p');
                     remaining.className = 'todo-name';
