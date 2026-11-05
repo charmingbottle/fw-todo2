@@ -5,7 +5,10 @@
 body {
     margin: 0;
     color: #e2e8f0;
-    background: linear-gradient(135deg, #0b1220 0%, #111827 55%, #0f1f2e 100%);
+    background: linear-gradient(rgba(11, 18, 32, 0.55), rgba(15, 31, 46, 0.55)), url('/images/todo-background.png');
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
     font-family: sans-serif;
     font-size: 16px;
     line-height: 1.6;
@@ -190,9 +193,12 @@ body {
 
 .todo-actions {
     display: flex;
+    align-items: center;
     gap: 12px;
     margin: 0 0 24px;
 }
+
+
 
 .btn-primary {
     background: #2563eb;
